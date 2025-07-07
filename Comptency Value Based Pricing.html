@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Competency Value Calculator</title>
+    <!-- Tailwind CSS CDN for styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom keyframe animation for fading in elements */
+        @keyframes fade-in {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-fade-in {
+            animation: fade-in 0.5s ease-out forwards;
+        }
+        /* Styling for tooltips on hover */
+        .tooltip {
+            position: absolute;
+            bottom: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            margin-bottom: 8px;
+            z-index: 50;
+            display: none;
+            width: 16rem; /* 256px */
+            background-color: rgba(31, 41, 55, 0.95); /* bg-gray-800 with some transparency */
+            color: white;
+            font-size: 0.75rem; /* text-xs */
+            border-radius: 0.5rem; /* rounded-lg */
+            padding: 0.5rem; /* p-2 */
+            opacity: 0;
+            transition: opacity 0.3s ease-out;
+            pointer-events: none; /* Allows clicks to pass through when not visible */
+            text-align: center;
+        }
+        .group:hover .tooltip {
+            display: block;
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans">
+    <div class="p-4 sm:p-6 lg:p-8 max-w-4xl mx-auto">
+        <header class="text-center mb-8">
+            <h1 class="text-3xl sm:text-4xl font-bold text-gray-800">Competency Value Calculator</h1>
+            <p class="mt-2 text-md text-gray-600 max-w-2xl mx-auto">Estimate the annual value and explore pricing models for our skilled nursing competency features.</p>
+        </header>
+
+        <div class="space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <!-- Input Section: Organization Details -->
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <div class="flex items-center gap-3 mb-6">
+                        <!-- Icon for Organization Details -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-blue-500"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
+                        <h2 class="text-2xl font-semibold text-gray-700">1. Organization Details</h2>
+                    </div>
+                    <div class="space-y-4">
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label for="numberOfFacilities" class="block text-sm font-medium text-gray-700">Number of Facilities</label>
+                                <input type="number" id="numberOfFacilities" placeholder="1" value="1" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"/>
+                            </div>
+                            <div>
+                                <label for="bedsPerFacility" class="block text-sm font-medium text-gray-700">Avg. Beds per Facility</label>
+                                <input type="number" id="bedsPerFacility" placeholder="100" value="100" class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm"/>
+                            </div>
+                        </div>
+                        <div id="employee-counts-container" class="bg-gray-50 p-3 rounded-lg mt-4 hidden">
+                            <div class="flex items-center gap-2 mb-2">
+                                <h3 class="text-lg font-medium text-gray-800">Estimated Employee Counts</h3>
+                                <div class="relative group">
+                                     <!-- Info icon for tooltip -->
+                                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-gray-400"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                                    <div class="tooltip">
+                                        The default staffing ratios are based on synthesized industry averages. They are intended as a starting point and should be adjusted in the Assumptions section to match the specific client's data.
+                                    </div>
+                                </div>
+                            </div>
+                            <div id="employee-counts-list" class="space-y-1 text-sm"></div>
+                        </div>
+                    </div>
+                    <div class="mt-8 flex items-center space-x-4">
+                        <button id="calculate-btn" class="w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">Calculate Value & Pricing</button>
+                        <button id="reset-btn" class="w-full bg-gray-200 text-gray-700 font-bold py-3 px-4 rounded-lg hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-400 transition duration-150 ease-in-out">Reset</button>
+                    </div>
+                </div>
+
+                <!-- Results Section: Estimated Annual Value -->
+                <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200">
+                    <div class="flex items-center gap-3 mb-6">
+                        <!-- Icon for Estimated Annual Value -->
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-green-500"><line x1="12" y1="1" x2="12" y2="23"></line><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path></svg>
+                        <h2 class="text-2xl font-semibold text-gray-700">2. Estimated Annual Value</h2>
+                    </div>
+                    <div id="results-container">
+                        <div class="flex flex-col items-center justify-center h-full text-center text-gray-500">
+                            <!-- Placeholder icon for results -->
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-indigo-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>
+                            <p class="mt-4">Your results will be displayed here.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Container for dynamic pricing sections -->
+            <div id="pricing-sections" class="space-y-8"></div>
+        </div>
+        
+        <footer class="text-center mt-8 text-xs text-gray-500">
+            <p>Disclaimer: This calculator provides an estimate for illustrative purposes only. Actual value and savings may vary based on specific organizational factors. The underlying data is based on industry research and typical customer outcomes.</p>
+        </footer>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Initial data for roles, value drivers, and pricing models
+            const initialValueData = {
+                roles: [
+                    { id: 'rn', name: 'Registered Nurse (RN)', avgHourlyRate: 42.80, employeesPer100Beds: 25, isClinical: true, isAdmin: false },
+                    { id: 'lpn', name: 'Licensed Practical Nurse (LPN)', avgHourlyRate: 27.07, employeesPer100Beds: 20, isClinical: true, isAdmin: false },
+                    { id: 'cna', name: 'Certified Nursing Assistant (CNA)', avgHourlyRate: 17.41, employeesPer100Beds: 40, isClinical: true, isAdmin: false },
+                    { id: 'manager', name: 'Nurse Educator / Manager', avgHourlyRate: 48.50, employeesPer100Beds: 2, isClinical: false, isAdmin: true },
+                    { id: 'admin', name: 'Facility Administrator', avgHourlyRate: 55.00, employeesPer100Beds: 1, isClinical: false, isAdmin: true }
+                ],
+                valueDrivers: {
+                    adminHoursSavedPerNurse: { hours: 4 },
+                    auditPreparedness: { annualValue: 5000 },
+                    inHouseCompetencyCost: { annualValue: 5000 },
+                    improvedEmployeeExperience: { annualValue: 1000 }
+                },
+                perUserPricing: {
+                    competency: { price: 60, enabled: true },
+                    inService: { price: 35, enabled: true },
+                    ceu: { price: 15, enabled: true },
+                    newHire: { price: 15, enabled: true },
+                    antiHarassment: { price: 10, enabled: true }
+                },
+                valueBasedPricing: {
+                    percentage: 25
+                }
+            };
+
+            let appState; // Global state for the calculator
+
+            // Function to initialize or reset the application state
+            function initializeState() {
+                appState = JSON.parse(JSON.stringify(initialValueData)); // Deep copy initial data
+            }
+
+            // Get references to DOM elements
+            const numberOfFacilitiesEl = document.getElementById('numberOfFacilities');
+            const bedsPerFacilityEl = document.getElementById('bedsPerFacility');
+            const calculateBtn = document.getElementById('calculate-btn');
+            const resetBtn = document.getElementById('reset-btn');
+            const resultsContainer = document.getElementById('results-container');
+            const pricingSectionsContainer = document.getElementById('pricing-sections');
+            const employeeCountsContainer = document.getElementById('employee-counts-container');
+            const employeeCountsList = document.getElementById('employee-counts-list');
+            
+            // Helper function to format currency
+            const formatCurrency = (value) => new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+
+            // Calculates estimated employee counts based on facilities and beds
+            function getEmployeeCounts() {
+                const facilities = parseInt(numberOfFacilitiesEl.value, 10) || 0;
+                const beds = parseInt(bedsPerFacilityEl.value, 10) || 0;
+                const totalBeds = facilities * beds;
+                const counts = {};
+                let totalUsers = 0;
+                appState.roles.forEach(role => {
+                    const count = Math.round(totalBeds * (role.employeesPer100Beds / 100));
+                    counts[role.id] = count;
+                    totalUsers += count;
+                });
+                counts.total = totalUsers;
+                return counts;
+            }
+
+            // Updates the UI to display estimated employee counts
+            function updateEmployeeCountsUI() {
+                const employeeCounts = getEmployeeCounts();
+                if (employeeCounts.total > 0) {
+                    employeeCountsContainer.classList.remove('hidden');
+                } else {
+                    employeeCountsContainer.classList.add('hidden');
+                }
+                let html = '';
+                appState.roles.forEach(role => {
+                    html += `<div class="flex justify-between"><span>${role.name}:</span> <span class="font-medium">${employeeCounts[role.id] || 0}</span></div>`;
+                });
+                html += `<div class="flex justify-between font-bold pt-1 border-t border-gray-300"><span>Total:</span> <span>${employeeCounts.total || 0}</span></div>`;
+                employeeCountsList.innerHTML = html;
+            }
+
+            // Updates the pricing UI sections based on current state
+            function updateUI() {
+                const facilities = parseInt(numberOfFacilitiesEl.value, 10) || 0;
+                const employeeCounts = getEmployeeCounts();
+                const totalUsers = employeeCounts.total;
+
+                // Only update if results are already displayed (i.e., calculate button has been pressed)
+                if (!resultsContainer.querySelector('.animate-fade-in')) return;
+
+                // Per User Pricing calculation and display update
+                const { competency, inService, ceu, newHire, antiHarassment } = appState.perUserPricing;
+                const totalALaCartePrice = 
+                    (competency.enabled ? competency.price : 0) +
+                    (inService.enabled ? inService.price : 0) +
+                    (ceu.enabled ? ceu.price : 0) +
+                    (newHire.enabled ? newHire.price : 0) +
+                    (antiHarassment.enabled ? antiHarassment.price : 0);
+                const perUserAnnualSubscription = totalUsers > 0 ? totalALaCartePrice * totalUsers : 0;
+                document.getElementById('a-la-carte-total').innerText = formatCurrency(perUserAnnualSubscription);
+
+                // Value-Based Pricing calculation and display update
+                const grandTotal = parseFloat(resultsContainer.querySelector('#grand-total-value').dataset.value);
+                const { percentage } = appState.valueBasedPricing;
+                const suggestedAnnualPrice = grandTotal * (percentage / 100);
+                const perFacilityPerMonthPrice = facilities > 0 ? suggestedAnnualPrice / facilities / 12 : 0;
+                
+                document.getElementById('value-based-annual-price').innerText = formatCurrency(suggestedAnnualPrice);
+                document.getElementById('value-based-monthly-price').innerText = formatCurrency(perFacilityPerMonthPrice);
+                document.getElementById('value-share-display').innerText = `${percentage}%`;
+
+                // Calculate total clinical staff for Per User Costs
+                let totalClinicalStaff = 0;
+                appState.roles.forEach(role => {
+                    if (role.isClinical) totalClinicalStaff += employeeCounts[role.id];
+                });
+
+                // Calculate Per User Costs
+                const perUserCosts = totalClinicalStaff > 0 ? suggestedAnnualPrice / totalClinicalStaff : 0;
+                document.getElementById('value-based-per-user-cost').innerText = formatCurrency(perUserCosts);
+            }
+
+            // Calculates all values and renders the results and pricing sections
+            function calculateAndRender() {
+                const facilities = parseInt(numberOfFacilitiesEl.value, 10) || 0;
+                const beds = parseInt(bedsPerFacilityEl.value, 10) || 0;
+                
+                // Input validation
+                if (facilities === 0 || beds === 0) {
+                    resultsContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-gray-500"><p class="mt-4">Please enter the number of facilities and beds.</p></div>`;
+                    pricingSectionsContainer.innerHTML = ''; // Clear pricing sections if inputs are invalid
+                    return;
+                }
+
+                updateEmployeeCountsUI(); // Update employee counts display
+                const employeeCounts = getEmployeeCounts();
+                let totalClinicalStaff = 0;
+                appState.roles.forEach(role => {
+                    if (role.isClinical) totalClinicalStaff += employeeCounts[role.id];
+                });
+
+                let totalAdminTimeSavings = 0;
+                let totalAdminCost = 0;
+                let adminCount = 0;
+                appState.roles.forEach(role => {
+                    if (role.isAdmin) {
+                        totalAdminCost += employeeCounts[role.id] * role.avgHourlyRate;
+                        adminCount += employeeCounts[role.id];
+                    }
+                });
+
+                const avgAdminSalary = adminCount > 0 ? totalAdminCost / adminCount : 0;
+                totalAdminTimeSavings = totalClinicalStaff * appState.valueDrivers.adminHoursSavedPerNurse.hours * avgAdminSalary;
+
+                const totalInHouseCost = appState.valueDrivers.inHouseCompetencyCost.annualValue * facilities; // Multiply by facilities
+                const auditValue = appState.valueDrivers.auditPreparedness.annualValue * facilities;
+                const employeeExperienceValue = appState.valueDrivers.improvedEmployeeExperience.annualValue * facilities; // Calculate value for Improved Employee Experience
+
+                // Calculate the grand total estimated value
+                const grandTotal = totalAdminTimeSavings + totalInHouseCost + auditValue + employeeExperienceValue;
+
+                // Render the results section with calculated values
+                resultsContainer.innerHTML = `
+                    <div class="space-y-4 animate-fade-in">
+                        <div class="bg-green-100 border-l-4 border-green-500 text-green-800 p-4 rounded-lg">
+                            <p class="font-bold text-lg">Total Estimated Value</p>
+                            <p id="grand-total-value" data-value="${grandTotal}" class="text-3xl font-bold">${formatCurrency(grandTotal)}</p>
+                        </div>
+                        <div class="space-y-3 pt-4">
+                            <div class="pb-3 border-b border-gray-200 last:border-b-0"><div class="flex justify-between items-baseline"><p class="text-md font-medium text-gray-800">Enhanced Compliance, Data Insights and Audit Readiness</p><p class="text-lg font-semibold text-gray-900">${formatCurrency(auditValue)}</p></div><p class="text-xs text-gray-600 mt-1">Value of streamlined audit reporting and reduced compliance risk, per facility.</p></div>
+                            <div class="pb-3 border-b border-gray-200 last:border-b-0"><div class="flex justify-between items-baseline"><p class="text-md font-medium text-gray-800">Administrative Time Savings</p><p class="text-lg font-semibold text-gray-900">${formatCurrency(totalAdminTimeSavings)}</p></div><p class="text-xs text-gray-600 mt-1">Value from reducing time spent on competency management, based on the number of clinical staff.</p></div>
+                            <div class="pb-3 border-b border-gray-200 last:border-b-0"><div class="flex justify-between items-baseline"><p class="text-md font-medium text-gray-800">Proprietary Solutions and Operating Costs</p><p class="text-lg font-semibold text-gray-900">${formatCurrency(totalInHouseCost)}</p></div><p class="text-xs text-gray-600 mt-1">Estimated annual cost to build, maintain, and manage an in-house competency tracking system, per facility.</p></div>
+                            <div class="pb-3 border-b border-gray-200 last:border-b-0"><div class="flex justify-between items-baseline"><p class="text-md font-medium text-gray-800">Improved Employee Development and Retention</p><p class="text-lg font-semibold text-gray-900">${formatCurrency(employeeExperienceValue)}</p></div><p class="text-xs text-gray-600 mt-1">Value from enhanced employee satisfaction, retention, and professional growth opportunities, per facility.</p></div>
+                        </div>
+                    </div>`;
+
+                renderPricingSections(); // Render the pricing and assumptions sections
+                updateUI(); // Call updateUI to populate all values after rendering sections
+            }
+
+            // Renders the dynamic pricing and assumptions sections
+            function renderPricingSections() {
+                pricingSectionsContainer.innerHTML = `
+                    <div class="lg:col-span-2 space-y-8">
+                        <!-- Assumptions Section -->
+                        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 animate-fade-in">
+                            <h2 class="text-2xl font-semibold text-gray-700 mb-6">3. Calculation Assumptions</h2>
+                            <div class="space-y-6">
+                                <div>
+                                    <h3 class="font-semibold text-lg text-gray-800 mb-3">Staffing & Salary Assumptions</h3>
+                                    <div class="grid grid-cols-3 gap-4 items-center mb-2 text-sm font-medium text-gray-500">
+                                        <span>Role</span>
+                                        <span class="text-right">Avg. Employees per 100 Beds</span>
+                                        <span class="text-right">Avg. Hourly Salary Rate ($)</span>
+                                    </div>
+                                    <div id="assumptions-roles-container" class="space-y-2"></div>
+                                </div>
+                                <hr/>
+                                <div>
+                                    <h3 class="font-semibold text-lg text-gray-800 mb-2">General Value Drivers</h3>
+                                    <div id="assumptions-drivers-container" class="space-y-2"></div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Value Based Pricing Section -->
+                        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 animate-fade-in">
+                           <h2 class="text-2xl font-semibold text-gray-700 mb-6">4. Value-Based Pricing</h2>
+                            <div class="space-y-4">
+                                <div>
+                                    <label for="pricing-percentage" class="block text-sm font-medium text-gray-700">Value Share Percentage: <span id="value-share-display" class="font-bold text-indigo-600"></span></label>
+                                    <p class="text-xs text-gray-500 mb-2">Adjust the percentage of the total value you want to propose as the price.</p>
+                                    <input id="pricing-percentage" type="range" min="0" max="100" step="1" value="25" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" />
+                                </div>
+                                <div class="bg-purple-50 border-l-4 border-purple-500 text-purple-800 p-4 rounded-lg space-y-2">
+                                    <div class="flex justify-between items-center pb-2 border-b border-purple-200">
+                                        <p class="font-semibold">Suggested Annual Price</p>
+                                        <p id="value-based-annual-price" class="text-xl font-bold"></p>
+                                    </div>
+                                    <div class="mt-2 flex justify-between text-sm">
+                                        <p>Per Facility / Month:</p>
+                                        <p id="value-based-monthly-price" class="font-semibold"></p>
+                                    </div>
+                                    <div class="mt-2 flex justify-between text-sm">
+                                        <p>Per User Costs:</p>
+                                        <p id="value-based-per-user-cost" class="font-semibold"></p>
+                                    </div>
+                                    <p class="text-xs italic pt-2">*Inclusive of standard Showd.Me LMS Services + Competencies and Assessments.</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bundled Facility Pricing Section -->
+                        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 animate-fade-in">
+                            <h2 class="text-2xl font-semibold text-gray-700 mb-6">5. Bundled Facility Pricing</h2>
+                            <div class="bg-indigo-600 text-white p-6 rounded-xl shadow-lg mb-6 text-center">
+                                <h3 class="text-3xl font-bold mb-2">Bundled Facility Pricing</h3>
+                                <p class="text-lg"><span class="font-semibold">Details:</span> 100 beds, 120 users</p>
+                            </div>
+
+                            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                                <!-- Basic Package Features Card -->
+                                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                    <h3 class="text-xl font-medium text-gray-800 mb-4">Basic Package</h3>
+                                    <p class="text-lg font-semibold text-indigo-600 mb-4">$3000 ($25/user)</p>
+                                    <ul class="text-gray-700 text-sm space-y-2">
+                                        <li class="pb-2 border-b border-gray-200">Live Multilingual End-User Support</li>
+                                        <li class="pb-2 border-b border-gray-200">Mobile Optimized Platform</li>
+                                        <li class="pb-2 border-b border-gray-200">Online Forms and E-sign</li>
+                                        <li class="pb-2 border-b border-gray-200">Scheduled SMS & Email Reminders</li>
+                                        <li class="pb-2 border-b border-gray-200">Unlimited User Access & Full Course Library</li>
+                                        <li class="pb-2 border-b border-gray-200">Analytics Dashboard</li>
+                                        <li class="pb-2 border-b border-gray-200">Dedicated Account Manager</li>
+                                        <li class="pb-2 border-b border-gray-200">Document Uploads</li>
+                                        <li class="pb-2 border-b border-gray-200">E-sign Functionality & Online Forms</li>
+                                        <li class="pb-2 border-b border-gray-200">EVV Training</li>
+                                        <li class="pb-2 border-b border-gray-200">Certificate Management and Delivery</li>
+                                        <li class="pb-2 border-b border-gray-200">Annual In-Service Compliance Training</li>
+                                        <li class="pb-2 border-b border-gray-200">CEU Program Access</li>
+                                        <li class="pb-2">New Hire Orientation Training</li>
+                                    </ul>
+                                </div>
+
+                                <!-- Competency Package Features Card -->
+                                <div class="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+                                    <h3 class="text-xl font-medium text-gray-800 mb-4">Competency Package</h3>
+                                    <p class="text-lg font-semibold text-indigo-600 mb-4">$3775 - $4140 ($32 - $35/user)</p>
+                                    <ul class="text-gray-700 text-sm space-y-2">
+                                        <li class="pb-2 border-b border-gray-200">Live Multilingual End-User Support</li>
+                                        <li class="pb-2 border-b border-gray-200">Mobile Optimized Platform</li>
+                                        <li class="pb-2 border-b border-gray-200">Online Forms and E-sign</li>
+                                        <li class="pb-2 border-b border-gray-200">Scheduled SMS & Email Reminders</li>
+                                        <li class="pb-2 border-b border-gray-200">Unlimited User Access & Full Course Library</li>
+                                        <li class="pb-2 border-b border-gray-200">Analytics Dashboard</li>
+                                        <li class="pb-2 border-b border-gray-200">Dedicated Account Manager</li>
+                                        <li class="pb-2 border-b border-gray-200">Document Uploads</li>
+                                        <li class="pb-2 border-b border-gray-200">E-sign Functionality & Online Forms</li>
+                                        <li class="pb-2 border-b border-gray-200">EVV Training</li>
+                                        <li class="pb-2 border-b border-gray-200">Certificate Management and Delivery</li>
+                                        <li class="pb-2 border-b border-gray-200">Annual In-Service Compliance Training</li>
+                                        <li class="pb-2 border-b border-gray-200">CEU Program Access</li>
+                                        <li class="pb-2 border-b border-gray-200">New Hire Orientation Training</li>
+                                        <li class="pb-2">Competency Evaluations</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Bundle Research Details Section -->
+                        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 animate-fade-in">
+                            <h2 class="text-2xl font-semibold text-gray-700 mb-6">6. Bundle Research Details</h2>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-2 text-gray-700">
+                                <div class="flex flex-col">
+                                    <p class="font-medium">Contracts:</p>
+                                    <p>46 contracts indicating facilities</p>
+                                </div>
+                                <div class="flex flex-col">
+                                    <p class="font-medium">In-service:</p>
+                                    <p>46 inservice.</p>
+                                </div>
+                                <div class="flex flex-col">
+                                    <p class="font-medium">Live Multilingual End-User Support Data:</p>
+                                    <p>40 Included O&O</p>
+                                </div>
+                                <div class="flex flex-col">
+                                    <p class="font-medium">Mobile Optimized Platform Data:</p>
+                                    <p>35 Include Orientation</p>
+                                </div>
+                                <div class="flex flex-col">
+                                    <p class="font-medium">Online Forms and E-sign Data:</p>
+                                    <p>39 include CNE</p>
+                                </div>
+                                <div class="flex flex-col">
+                                    <p class="font-medium">Scheduled SMS & Email Reminders Data:</p>
+                                    <p>20 Include Competency</p>
+                                </div>
+                                <div class="flex flex-col">
+                                    <p class="font-medium">Unlimited User Access & Full Course Library Data:</p>
+                                    <p>1 includes AH - Altira Health Group</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Per User Pricing Section -->
+                        <div class="bg-white p-6 rounded-xl shadow-md border border-gray-200 animate-fade-in">
+                            <h2 class="text-2xl font-semibold text-gray-700 mb-6">7. Per User Pricing</h2>
+                            <div id="per-user-sliders-container" class="space-y-4"></div>
+                            <div class="bg-teal-50 border-l-4 border-teal-500 text-teal-800 p-4 rounded-lg space-y-2 mt-4">
+                                <div class="flex justify-between items-center">
+                                    <p class="font-semibold">A La Carte Annual Total</p>
+                                    <p id="a-la-carte-total" class="text-xl font-bold"></p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                attachEventListeners(); // Attach event listeners to newly rendered elements
+            }
+
+            // Attaches all necessary event listeners for dynamic elements
+            function attachEventListeners() {
+                // Assumptions - Roles: Event listeners for staffing and salary inputs
+                const rolesContainer = document.getElementById('assumptions-roles-container');
+                rolesContainer.innerHTML = ''; // Clear previous content
+                appState.roles.forEach(role => {
+                    const el = document.createElement('div');
+                    el.className = 'grid grid-cols-3 gap-4 items-center';
+                    el.innerHTML = `
+                        <label for="rate-${role.id}" class="text-sm text-gray-600 col-span-1">${role.name}</label>
+                        <input type="number" id="ratio-${role.id}" name="employeesPer100Beds" value="${role.employeesPer100Beds}" class="w-full text-right px-2 py-1 border border-gray-300 rounded-md shadow-sm sm:text-sm"/>
+                        ${role.isAdmin ? 
+                            `<input type="number" step="0.01" id="rate-${role.id}" name="avgHourlyRate" value="${role.avgHourlyRate}" class="w-full text-right px-2 py-1 border border-gray-300 rounded-md shadow-sm sm:text-sm"/>` : 
+                            `<div class="text-right text-sm text-gray-400 pr-2">N/A</div>`
+                        }
+                    `;
+                    rolesContainer.appendChild(el);
+                    el.querySelector(`#ratio-${role.id}`).addEventListener('input', (e) => {
+                        const roleToUpdate = appState.roles.find(r => r.id === role.id);
+                        roleToUpdate.employeesPer100Beds = parseFloat(e.target.value) || 0;
+                        updateEmployeeCountsUI();
+                        // Only update UI if results are already displayed
+                        if (resultsContainer.querySelector('.animate-fade-in')) updateUI();
+                    });
+                    if (role.isAdmin) {
+                        el.querySelector(`#rate-${role.id}`).addEventListener('input', (e) => {
+                            const roleToUpdate = appState.roles.find(r => r.id === role.id);
+                            roleToUpdate.avgHourlyRate = parseFloat(e.target.value) || 0;
+                            // Only update UI if results are already displayed
+                            if (resultsContainer.querySelector('.animate-fade-in')) updateUI();
+                        });
+                    }
+                });
+
+                // Assumptions - Drivers: Event listeners for value driver inputs
+                const driversContainer = document.getElementById('assumptions-drivers-container');
+                driversContainer.innerHTML = ''; // Clear previous content
+                const driverConfigs = [
+                    { key: 'adminHoursSavedPerNurse', label: 'Annual Admin Hours Saved per Nurse', type: 'hours', step: 0.5, tooltip: `Default: ${initialValueData.valueDrivers.adminHoursSavedPerNurse.hours} hrs. Total clinical staff is multiplied by this value to get total admin hours saved. This time is valued using the administrative staff's average salary.` },
+                    { key: 'inHouseCompetencyCost', label: 'Proprietary Solutions and Operating Costs ($/facility)', type: 'annualValue', step: 1000, tooltip: `Default: ${formatCurrency(initialValueData.valueDrivers.inHouseCompetencyCost.annualValue)}. The estimated annual cost to build, maintain, and manage a competency tracking system internally, per facility.` },
+                    { key: 'auditPreparedness', label: 'Enhanced Compliance, Data Insights and Audit Readiness ($/facility)', type: 'annualValue', step: 1, tooltip: `Default: ${formatCurrency(initialValueData.valueDrivers.auditPreparedness.annualValue)}. This value is multiplied by the 'Number of Facilities' to calculate the total value of improved compliance and audit preparedness.` },
+                    { key: 'improvedEmployeeExperience', label: 'Improved Employee Development and Retention ($/facility)', type: 'annualValue', step: 1000, tooltip: `Default: ${formatCurrency(initialValueData.valueDrivers.improvedEmployeeExperience.annualValue)}. This value is multiplied by the 'Number of Facilities' to calculate the total value from enhanced employee satisfaction, retention, and professional growth opportunities.` }
+                ];
+                driverConfigs.forEach(config => {
+                    const el = document.createElement('div');
+                    el.className = 'flex items-center justify-between';
+                    el.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <label for="${config.key}" class="text-sm text-gray-600">${config.label}</label>
+                            <div class="relative group">
+                               <!-- Info icon for tooltip -->
+                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-5 w-5 text-gray-400"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                               <div class="tooltip">${config.tooltip}</div>
+                            </div>
+                        </div>
+                        <input type="number" step="${config.step}" id="${config.key}" name="${config.type}" value="${appState.valueDrivers[config.key][config.type]}" class="w-24 text-right px-2 py-1 border border-gray-300 rounded-md shadow-sm sm:text-sm"/>
+                    `;
+                    driversContainer.appendChild(el);
+                    el.querySelector(`#${config.key}`).addEventListener('input', e => {
+                        appState.valueDrivers[config.key][config.type] = parseFloat(e.target.value) || 0;
+                        // Only update UI if results are already displayed
+                        if (resultsContainer.querySelector('.animate-fade-in')) updateUI();
+                    });
+                });
+
+                // Per User Pricing Sliders: Event listeners for individual pricing components
+                const perUserSlidersContainer = document.getElementById('per-user-sliders-container');
+                perUserSlidersContainer.innerHTML = ''; // Clear previous content
+                const sliderConfigs = [
+                    { id: 'competency', label: 'Competency Price', min: 25, max: 100, step: 1, price: appState.perUserPricing.competency.price, enabled: appState.perUserPricing.competency.enabled, setter: (val) => appState.perUserPricing.competency.price = val, enabler: (val) => appState.perUserPricing.competency.enabled = val },
+                    { id: 'inService', label: 'In-Service Training', min: 25, max: 45, step: 1, price: appState.perUserPricing.inService.price, enabled: appState.perUserPricing.inService.enabled, setter: (val) => appState.perUserPricing.inService.price = val, enabler: (val) => appState.perUserPricing.inService.enabled = val },
+                    { id: 'ceu', label: 'CEUs', min: 5, max: 20, step: 1, price: appState.perUserPricing.ceu.price, enabled: appState.perUserPricing.ceu.enabled, setter: (val) => appState.perUserPricing.ceu.price = val, enabler: (val) => appState.perUserPricing.ceu.enabled = val },
+                    { id: 'newHire', label: 'New Hire Orientation', min: 5, max: 20, step: 1, price: appState.perUserPricing.newHire.price, enabled: appState.perUserPricing.newHire.enabled, setter: (val) => appState.perUserPricing.newHire.price = val, enabler: (val) => appState.perUserPricing.newHire.enabled = val },
+                    { id: 'antiHarassment', label: 'Anti-Harassment', min: 5, max: 20, step: 1, price: appState.perUserPricing.antiHarassment.price, enabled: appState.perUserPricing.antiHarassment.enabled, setter: (val) => appState.perUserPricing.antiHarassment.price = val, enabler: (val) => appState.perUserPricing.antiHarassment.enabled = val }
+                ];
+
+                sliderConfigs.forEach(config => {
+                    const sliderDiv = document.createElement('div');
+                    sliderDiv.innerHTML = `
+                        <div class="flex items-center gap-2">
+                            <input type="checkbox" id="enable-${config.id}" ${config.enabled ? 'checked' : ''} class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"/>
+                            <label for="${config.id}-price" class="block text-sm font-medium ${config.enabled ? 'text-gray-700' : 'text-gray-400'}">${config.label} / User / Year: <span class="font-bold text-indigo-600">${formatCurrency(config.price)}</span></label>
+                        </div>
+                        <input id="${config.id}-price" type="range" min="${config.min}" max="${config.max}" step="${config.step}" value="${config.price}" ${!config.enabled ? 'disabled' : ''} class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer disabled:bg-gray-100" />
+                    `;
+                    perUserSlidersContainer.appendChild(sliderDiv);
+                    
+                    sliderDiv.querySelector(`#enable-${config.id}`).addEventListener('change', (e) => {
+                        config.enabler(e.target.checked);
+                        // Enable/disable the slider based on checkbox state
+                        sliderDiv.querySelector(`#${config.id}-price`).disabled = !e.target.checked;
+                        updateUI();
+                    });
+                    sliderDiv.querySelector(`#${config.id}-price`).addEventListener('input', (e) => {
+                        config.setter(parseFloat(e.target.value));
+                        sliderDiv.querySelector('label span').innerText = formatCurrency(e.target.value); // Update displayed price
+                        updateUI();
+                    });
+                });
+
+                // Value-Based Pricing listener
+                document.getElementById('pricing-percentage').addEventListener('input', (e) => {
+                    appState.valueBasedPricing.percentage = parseFloat(e.target.value);
+                    updateUI();
+                });
+            }
+
+            // --- INITIAL SETUP ---
+            initializeState(); // Initialize the application state
+            // Set initial values for the input fields
+            numberOfFacilitiesEl.value = '1';
+            bedsPerFacilityEl.value = '100';
+            updateEmployeeCountsUI(); // Update employee counts based on initial values
+            calculateAndRender(); // Perform initial calculation and render all sections on page load
+
+            calculateBtn.addEventListener('click', calculateAndRender); // Attach click listener to calculate button
+            
+            // Reset button functionality
+            resetBtn.addEventListener('click', () => {
+                initializeState(); // Reset state to initial values
+                numberOfFacilitiesEl.value = '1'; // Reset input fields to default
+                bedsPerFacilityEl.value = '100';
+                // Reset results and pricing sections to initial placeholder state
+                resultsContainer.innerHTML = `<div class="flex flex-col items-center justify-center h-full text-center text-gray-500"><svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="h-6 w-6 text-indigo-500"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg><p class="mt-4">Your results will be displayed here.</p></div>`;
+                pricingSectionsContainer.innerHTML = '';
+                employeeCountsContainer.classList.add('hidden'); // Hide employee counts
+                attachEventListeners(); // Re-attach event listeners after resetting content
+                updateEmployeeCountsUI(); // Update employee counts based on reset values
+                calculateAndRender(); // Recalculate and render all sections after reset
+            });
+
+            // Input event listeners for immediate UI updates on employee counts
+            numberOfFacilitiesEl.addEventListener('input', updateEmployeeCountsUI);
+            bedsPerFacilityEl.addEventListener('input', updateEmployeeCountsUI);
+        });
+    </script>
+</body>
+</html>
